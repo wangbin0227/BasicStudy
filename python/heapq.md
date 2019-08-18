@@ -80,5 +80,11 @@ Args: n, list
       
 - [ ] itertools 模块
       涉及到islice, count, imap, izip, tee, chain
+      
+- [ ] python3
+      python3的实现与Python2.7部分函数不一样      
 
+
+### 参考文档
+1. [源码](https://hg.python.org/cpython/file/2.7/Lib/heapq.py)
 

@@ -8,8 +8,9 @@ DIR_THIS = os.path.dirname(os.path.abspath(__file__))
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print "demo file_name"
-        print "例: demo test_list"
+        print "error!!!"
+        print "python_demo file_name"
+        print "例: python_demo test_list"
     else:
         file_name = sys.argv[1]
         if os.path.exists('./{}.py'.format(file_name)) == True:

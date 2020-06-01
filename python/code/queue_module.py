@@ -1,10 +1,12 @@
-queue模块提供了适合多线程的
+# -*- coding:utf-8 -*-
+# @Author: wangbin
+# @Time: 2020-06-02 00:13:46
+# @FileName: queue_module
 
+import os
+import sys
+import queue
 
-### FIFO 队列
-Queue类，实现了最基础的先进先出队列，使用put方法，将元素添加到末尾，使用get方法将元素从另一边删除
-
-```
 def queue_fifo():
     q = queue.Queue()
     for i in range(5):
@@ -13,12 +15,7 @@ def queue_fifo():
     while not q.empty():
         print (q.get(), end = ' ')
     print ()
-```
 
-### LIFO 栈
-与标准的FIFO队列不同，LifoQueue实现了后进先出，这通常是栈；
-
-```
 def queue_lifo():
     q = queue.LifoQueue()
     for i in range(5):
@@ -28,25 +25,19 @@ def queue_lifo():
         print (q.get(), end = ' ')
     print ()
 
-```
-
-### 优先级队列
-有时，队列中元素的处理顺序需要基于这些元素的特征，而不仅仅是添加到队列中的顺序。例如，财务部门的打印作业可能优先于开发人员的代码列表打印。PriorityQueue使用队列内容的排序顺序来决定要检索的元素。
- 
-```
 class Job():
     def __init__(self, priority, description):
         self.priority = priority
         self.description = description
         print (description)
-        return
+        return 
 
     def __eq__(self, other):
         return self.priority == other.priority
 
     def __lt__(self, other):
         return self.priority < other.priority
-
+    
 def priority_queue():
     import threading
     print ('initial')
@@ -69,4 +60,22 @@ def priority_queue():
         w.setDaemon(True)
         w.start()
     q.join()
-```
+
+
+    
+
+
+def queue_module():
+    """
+    Args:
+    Returns:
+    Raises:
+    """
+    priority_queue()
+    return
+    queue_lifo()
+    return
+    queue_fifo()
+
+if __name__ == "__main__":
+    queue_module()

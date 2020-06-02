@@ -62,6 +62,33 @@ def priority_queue():
     q.join()
 
 
+def podcast_client():
+    import threading
+    num_fetch_threads = 2
+    enclosure_queue = queue.Queue()
+    feed_urls = [
+        'http://talkpython.fm/episodes/rss',
+    ]
+
+    def message(s):
+        print ('{}: {}'.format(threading.current_thread().name, s))
+
+    def download_enclosures(q):
+        import urllib
+        message('looking for the next enclosure')
+        url = q.get()
+        filename = url.rpartition('/')[-1]
+        message('downloading {}'.format(filename))
+        response = urllib.request.urlopen(url)
+        data = response.read()
+        message('writing to {}'.format(filename))
+        with open(filename, 'wb') as outfile:
+            outfile.write(data)
+        q.task_done()
+
+
+
+
     
 
 

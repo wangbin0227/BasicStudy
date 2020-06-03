@@ -86,6 +86,28 @@ def podcast_client():
             outfile.write(data)
         q.task_done()
 
+    for i in range(num_fetch_threads):
+        worker = threading.Thread(
+            target = download_enclosures,
+            args = (enclosure_queue, ),
+            name = 'work-{}'.format(i),
+        )
+        worker.setDaemon(True)
+        worker.start()
+    import feedparser
+    from urllib.parse import urlparse
+    for url in feed_urls:
+        response = feedparser.parse(url, agent='queue_module.py')
+        for entry in response['entries'][:5]:
+            for enclosure in entry.get('enclosures', []):
+                parsed_url = urlparse(enclosure['url'])
+                message('queuing {}'.format(
+                    parsed_url.path.rpartition('/')[-1]))
+                enclosure_queue.put(enclosure['url'])
+
+    message('*** main thread waiting')
+    enclosure_queue.join()
+    message('*** done')
 
 
 
@@ -98,6 +120,8 @@ def queue_module():
     Returns:
     Raises:
     """
+    podcast_client()
+    return
     priority_queue()
     return
     queue_lifo()

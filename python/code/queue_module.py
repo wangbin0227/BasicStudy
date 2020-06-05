@@ -63,6 +63,7 @@ def priority_queue():
 
 
 def podcast_client():
+    ### 初始化
     import threading
     num_fetch_threads = 2
     enclosure_queue = queue.Queue()
@@ -70,9 +71,11 @@ def podcast_client():
         'http://talkpython.fm/episodes/rss',
     ]
 
+    ### 辅助函数打印信息
     def message(s):
         print ('{}: {}'.format(threading.current_thread().name, s))
 
+    ### 多线程目标函数函数
     def download_enclosures(q):
         import urllib
         message('looking for the next enclosure')
@@ -86,6 +89,7 @@ def podcast_client():
             outfile.write(data)
         q.task_done()
 
+    ### 启动多线程
     for i in range(num_fetch_threads):
         worker = threading.Thread(
             target = download_enclosures,
@@ -94,6 +98,8 @@ def podcast_client():
         )
         worker.setDaemon(True)
         worker.start()
+
+    ### 队列中添加URL
     import feedparser
     from urllib.parse import urlparse
     for url in feed_urls:
@@ -105,14 +111,10 @@ def podcast_client():
                     parsed_url.path.rpartition('/')[-1]))
                 enclosure_queue.put(enclosure['url'])
 
+    ### 主线程
     message('*** main thread waiting')
     enclosure_queue.join()
     message('*** done')
-
-
-
-    
-
 
 def queue_module():
     """

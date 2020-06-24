@@ -35,11 +35,12 @@ bypass机制
 
 
 
-
 ### 官方文档
 [shuffle](https://spark.apache.org/docs/latest/rdd-programming-guide.html#shuffle-operations)
 
-spark的某些操作会触发shuffle事件，shuffle是spark用于重新分发数据的机制。这涉及到跨机器操作，因此shuffle是
+spark的某些操作会触发shuffle事件，shuffle是spark用于重新分发数据的机制。这涉及到跨机器操作，因此shuffle是复杂而昂贵的操作
+
+
 
 
 

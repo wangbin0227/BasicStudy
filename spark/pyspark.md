@@ -159,16 +159,7 @@ Spark的StorageLevel的目的是在内存使用率和CPU效率之间提供不同
 
 
 
-
-
-
-
-
-
-
-
-
-## 核心关注
+### 核心关注
 1. mapPartitionsWithIndex
 2. partitionBy
 3. randomSplit
@@ -179,91 +170,35 @@ Spark的StorageLevel的目的是在内存使用率和CPU效率之间提供不同
 8. union
 9. zip
 
+## 2、 Shuffle
+
+### 2.1 ExternalSorter类
+
+本次分析：重点关注外排算法过程。
+
+思路是：将数据分块，每块存储到文件，使用生成器进行merge
+
+1. 数据结构：batch（块大小）、chunks（list，元素是生成器，有序的）、current_chunk（list，带排序的元素集合）
+2. 循环执行步骤3-5，直到处理完所有元素：
+3. 每次读取batch大小的数据，放到current_chunk中
+4. 如果超过了内存限制，则对current_chunk进行排序，并将结果写入到文件中。
+5. 读取文件，产出生成器，将生成器放入到chunks中
+6. 调用heapq的merge方法，对chunks进行排序
+
+算子repartitionAndSortWithinPartitions，主要是使用该类实现的。
+
+### 2.2 Aggregator类
+
+包含 createCombiner、mergeValue、mergeCombiners三个方法的类
+
+### 2.3 Merger类
+定义了三个方法：mergeValues、mergeCombiners、items
+
+类ExternalMerger继承了Merger类
+
+#### MergeValues(iterator)方法
 
 
 
 
 
-
-
-- max(key=None)
-
-min(key=None)
-
-stdev()
-
-mean()
-
-sum()
-
-variance()
-
-sumApprox(timeout, confidence=0.95)
-
-
-- randomSplit(weights, seed=None)
-
-sample(withReplacement, fraction, seed=None)
-sampleByKey(withReplacement, fractions, seed=None)
-sampleStdev()
-sampleVariance()
-takeSample(withReplacement, num, seed=None)
-
-
-
-- zipWithIndex()
-zipWithUniqueId()
-
-
-
-
-saveAsHadoopDataset(conf, keyConverter=None, valueConverter=None)
-
-saveAsHadoopFile(path, outputFormatClass, keyClass=None, valueClass=None, keyConverter=None, valueConverter=None, conf=None, compressionCodecClass=None)
-
-saveAsNewAPIHadoopDataset(conf, keyConverter=None, valueConverter=None)
-
-saveAsNewAPIHadoopFile(path, outputFormatClass, keyClass=None, valueClass=None, keyConverter=None, valueConverter=None, conf=None)
-
-saveAsPickleFile(path, batchSize=10)
-
-saveAsSequenceFile(path, compressionCodecClass=None)
-
-saveAsTextFile(path, compressionCodecClass=None)
-
-
-reduceByKeyLocally(func)
-
-treeAggregate(zeroValue, seqOp, combOp, depth=2)
-treeReduce(f, depth=2)
-
-meanApprox(timeout, confidence=0.95)
-pipe(command, env=None, checkCode=False)
-
-barrier
-cartesian
-checkpoint
-
-localCheckpoint()
-getCheckpointFile
-toLocalIterator()
-
-id()
-name()
-setName(name)
-toDebugString()
-isEmpty()
-getNumPartitions()
-
-isCheckpointed()
-isLocallyCheckpointed()
-
-getStorageLevel()
-
-
-histogram(buckets)
-
-#### Experimental
-countApprox(timeout, confidence=0.95)
-
-countApproxDistinct(relativeSD=0.05)

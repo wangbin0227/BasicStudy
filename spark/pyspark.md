@@ -86,12 +86,18 @@ transformations操作都是惰性的，不会立即计算。actions操作，才�
 
 |算子|在python中实现|备注|
 |:--|:--|:--|
-| combineByKey| 基础|
+| combineByKey| 基础|原理如下文|
 | reduceByKey|['combineByKey']|
 | aggregateByKey|['combineByKey']|
 | foldByKey|['combineByKey']|
 | distinct|['map', 'reduceByKey']|
 | groupByKey|['mapPartitions', 'partitionBy', 'mapValues']|
+
+由于combineByKey()会遍历分区中的所有元素，因此每个元素的键要么还没有遇到过，要么就和之前的某个元素的键相同。
+
+1. 如果这是一个新的元素，combineByKey()会使用一个叫作createCombiner()的函数来创建那个键对应的累加器的初始值。需要注意的是，这一过程会在每个分区中第一次出现各个键时发生，而不是在整个RDD中第一次出现一个键时发生。
+2. 如果这是一个在处理当前分区之前已经遇到的键，它会使用mergeValue()方法将该键的累加器对应的当前值与这个新的值进行合并。
+3. 由于每个分区都是独立处理的，因此对于同一个键可以有多个累加器。如果有两个或者更多的分区都有对应同一个键的累加器，就需要使用用户提供的mergeCombiners()方法将各个分区的结果进行合并。
 
 
 - 涉及一个RDD的Shuffle操作

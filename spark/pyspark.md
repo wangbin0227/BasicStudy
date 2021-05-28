@@ -86,12 +86,18 @@ transformations操作都是惰性的，不会立即计算。actions操作，才�
 
 |算子|在python中实现|备注|
 |:--|:--|:--|
-| combineByKey| 基础|
+| combineByKey| 基础|原理如下文|
 | reduceByKey|['combineByKey']|
 | aggregateByKey|['combineByKey']|
 | foldByKey|['combineByKey']|
 | distinct|['map', 'reduceByKey']|
 | groupByKey|['mapPartitions', 'partitionBy', 'mapValues']|
+
+由于combineByKey()会遍历分区中的所有元素，因此每个元素的键要么还没有遇到过，要么就和之前的某个元素的键相同。
+
+1. 如果这是一个新的元素，combineByKey()会使用一个叫作createCombiner()的函数来创建那个键对应的累加器的初始值。需要注意的是，这一过程会在每个分区中第一次出现各个键时发生，而不是在整个RDD中第一次出现一个键时发生。
+2. 如果这是一个在处理当前分区之前已经遇到的键，它会使用mergeValue()方法将该键的累加器对应的当前值与这个新的值进行合并。
+3. 由于每个分区都是独立处理的，因此对于同一个键可以有多个累加器。如果有两个或者更多的分区都有对应同一个键的累加器，就需要使用用户提供的mergeCombiners()方法将各个分区的结果进行合并。
 
 
 - 涉及一个RDD的Shuffle操作
@@ -159,16 +165,7 @@ Spark的StorageLevel的目的是在内存使用率和CPU效率之间提供不同
 
 
 
-
-
-
-
-
-
-
-
-
-## 核心关注
+### 核心关注
 1. mapPartitionsWithIndex
 2. partitionBy
 3. randomSplit
@@ -179,91 +176,53 @@ Spark的StorageLevel的目的是在内存使用率和CPU效率之间提供不同
 8. union
 9. zip
 
+## 2、 Shuffle
+
+### 2.1 ExternalSorter类
+
+本次分析：重点关注外排算法过程。
+
+思路是：将数据分块，每块存储到文件，使用生成器进行merge
+
+1. 数据结构：batch（块大小）、chunks（list，元素是生成器，有序的）、current_chunk（list，带排序的元素集合）
+2. 循环执行步骤3-5，直到处理完所有元素：
+3. 每次读取batch大小的数据，放到current_chunk中
+4. 如果超过了内存限制，则对current_chunk进行排序，并将结果写入到文件中。
+5. 读取文件，产出生成器，将生成器放入到chunks中
+6. 调用heapq的merge方法，对chunks进行排序
+
+算子repartitionAndSortWithinPartitions，主要是使用该类实现的。
+
+### 2.2 Aggregator类
+
+包含 createCombiner、mergeValue、mergeCombiners三个方法的类
+
+### 2.3 Merger类
+定义了三个方法：mergeValues、mergeCombiners、items
+
+类ExternalMerger继承了Merger类
+
+#### MergeValues(iterator)方法
+
+两个核心的数据结果：data（dict），pdata（list）
+
+1. data是初始化使用，k值为iterator的key，对value执行Aggregator类中的createCombiner、mergeValue方法。
+
+2. 第一次超过使用内存落盘时，基于shuffle之后分区数，生成多个文件流。遍历第1步的data数据：基于k值和种子，获取hash后的值并对分区数取模，作为写入的文件。对pdata初始化，元素为空的dict，数量为分区数。
+3. 后续超过使用内存落盘时，按照分区数遍历pdata, 将每一个dict对应的元素写入到文件。
+
+#### items()
+1. 如果没有落盘，全部在内存中，直接返回data结果的迭代器
+2. 
+
+#### mergeCombiners
+
+
+## 原理
+
+Spark是
 
 
 
 
 
-
-
-- max(key=None)
-
-min(key=None)
-
-stdev()
-
-mean()
-
-sum()
-
-variance()
-
-sumApprox(timeout, confidence=0.95)
-
-
-- randomSplit(weights, seed=None)
-
-sample(withReplacement, fraction, seed=None)
-sampleByKey(withReplacement, fractions, seed=None)
-sampleStdev()
-sampleVariance()
-takeSample(withReplacement, num, seed=None)
-
-
-
-- zipWithIndex()
-zipWithUniqueId()
-
-
-
-
-saveAsHadoopDataset(conf, keyConverter=None, valueConverter=None)
-
-saveAsHadoopFile(path, outputFormatClass, keyClass=None, valueClass=None, keyConverter=None, valueConverter=None, conf=None, compressionCodecClass=None)
-
-saveAsNewAPIHadoopDataset(conf, keyConverter=None, valueConverter=None)
-
-saveAsNewAPIHadoopFile(path, outputFormatClass, keyClass=None, valueClass=None, keyConverter=None, valueConverter=None, conf=None)
-
-saveAsPickleFile(path, batchSize=10)
-
-saveAsSequenceFile(path, compressionCodecClass=None)
-
-saveAsTextFile(path, compressionCodecClass=None)
-
-
-reduceByKeyLocally(func)
-
-treeAggregate(zeroValue, seqOp, combOp, depth=2)
-treeReduce(f, depth=2)
-
-meanApprox(timeout, confidence=0.95)
-pipe(command, env=None, checkCode=False)
-
-barrier
-cartesian
-checkpoint
-
-localCheckpoint()
-getCheckpointFile
-toLocalIterator()
-
-id()
-name()
-setName(name)
-toDebugString()
-isEmpty()
-getNumPartitions()
-
-isCheckpointed()
-isLocallyCheckpointed()
-
-getStorageLevel()
-
-
-histogram(buckets)
-
-#### Experimental
-countApprox(timeout, confidence=0.95)
-
-countApproxDistinct(relativeSD=0.05)

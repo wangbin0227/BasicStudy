@@ -204,6 +204,24 @@ Spark的StorageLevel的目的是在内存使用率和CPU效率之间提供不同
 
 #### MergeValues(iterator)方法
 
+两个核心的数据结果：data（dict），pdata（list）
+
+1. data是初始化使用，k值为iterator的key，对value执行Aggregator类中的createCombiner、mergeValue方法。
+
+2. 第一次超过使用内存落盘时，基于shuffle之后分区数，生成多个文件流。遍历第1步的data数据：基于k值和种子，获取hash后的值并对分区数取模，作为写入的文件。对pdata初始化，元素为空的dict，数量为分区数。
+3. 后续超过使用内存落盘时，按照分区数遍历pdata, 将每一个dict对应的元素写入到文件。
+
+#### items()
+1. 如果没有落盘，全部在内存中，直接返回data结果的迭代器
+2. 
+
+#### mergeCombiners
+
+
+## 原理
+
+Spark是
+
 
 
 
